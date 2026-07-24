@@ -178,7 +178,7 @@ const Scene = (() => {
           <rect x="${x + 14}" y="${top + 24 + h * 0.36}" width="${w - 28}" height="${h * 0.4}" fill="none" stroke="#2e2418" stroke-width="3"/>
           <circle cx="${x + w - 18}" cy="${(top + BW.y2) / 2}" r="5" fill="#d8b36a"/>`;
     }
-    return hotspotWrap(exit, art);
+    return hotspotWrap(exit, art + dirTag(exit, c.x, top - 14));
   }
 
   function exitSide(exit, side, style, t1 = 0.42, t2 = 0.66) {
@@ -194,7 +194,16 @@ const Scene = (() => {
     return hotspotWrap(exit, `
       <polygon points="${pts}" fill="${isGap ? '#0a0d08' : '#0d0a07'}" stroke="${isGap ? 'none' : '#1c150e'}" stroke-width="6" class="hs-body"/>
       ${isGap ? '' : `<circle cx="${knobX}" cy="${lerp(B(midT), hTop(midT), 0.45)}" r="4.5" fill="#d8b36a"/>`}
+      ${dirTag(exit, xx(midT), hTop(midT) - 12, 17)}
     `);
+  }
+
+  const DIR_TAG = { north: 'N', south: 'S', east: 'E', west: 'W', up: 'UP', down: 'DN' };
+
+  function dirTag(exit, x, y, size = 20) {
+    const tag = DIR_TAG[exit.dir] || '';
+    if (!tag) return '';
+    return `<text x="${x}" y="${y}" text-anchor="middle" font-size="${size}" font-family="serif" fill="#d8b36a" opacity="0.85" class="door-dir">${tag}</text>`;
   }
 
   function hotspotWrap(exit, inner) {

@@ -50,14 +50,19 @@
 
     const exits = [];
     behindDir = null;
+    let behindLabel = '';
     for (const [dir, exit] of Object.entries(Engine.openExits())) {
       const wall = exit.wall || Scene.dirWall(dir, facing);
       const label = exit.label || `Go ${dir}`;
-      if (wall === 'behind') { behindDir = dir; continue; }
+      if (wall === 'behind') { behindDir = dir; behindLabel = label; continue; }
       let style = exit.style;
       if (!style && dir === 'up') style = 'stairs-up';
       if (!style && dir === 'down') style = 'stairs-down';
       exits.push({ dir, label, wall, style, u: exit.u });
+    }
+    if (behindDir) {
+      turnBtn.innerHTML = `&#8617; behind you &mdash; ${behindLabel} (${behindDir})`;
+      turnBtn.title = 'This door is behind you; clicking walks through it';
     }
 
     Scene.render(sceneEl, room, exits, visibleProps());
@@ -105,7 +110,7 @@
     const wrap = $('#minimap');
     if (!here) { wrap.hidden = true; return; }
     wrap.hidden = false;
-    $('#minimap-label').textContent = GAME.map.layers[here.layer] || '';
+    $('#mm-layer').textContent = GAME.map.layers[here.layer] || '';
 
     const layerRooms = Object.entries(GAME.map.rooms).filter(([, m]) => m.layer === here.layer);
     const xs = layerRooms.map(([, m]) => m.x), ys = layerRooms.map(([, m]) => m.y);
@@ -120,19 +125,28 @@
     const seen = new Set();
     for (const [id, m] of layerRooms) {
       if (!st.visited[id]) continue;
-      for (const ex of Object.values(GAME.rooms[id].exits || {})) {
+      for (const [dir, ex] of Object.entries(GAME.rooms[id].exits || {})) {
         const tm = GAME.map.rooms[ex.to];
         if (!tm || tm.layer !== m.layer || ex.to === id || !st.visited[ex.to]) continue;
         const key = [id, ex.to].sort().join('|');
         if (seen.has(key)) continue;
         seen.add(key);
-        edges += `<line x1="${px(m)}" y1="${py(m)}" x2="${px(tm)}" y2="${py(tm)}"/>`;
+        const dashed = dir === 'up' || dir === 'down' ? ' stroke-dasharray="3 3"' : '';
+        edges += `<line x1="${px(m)}" y1="${py(m)}" x2="${px(tm)}" y2="${py(tm)}"${dashed}/>`;
       }
     }
+    const FACE_DEG = { north: 0, east: 90, south: 180, west: 270 };
     for (const [id, m] of layerRooms) {
       if (!st.visited[id]) continue;
       const cur = id === st.room;
-      nodes += `<rect x="${px(m) - 7}" y="${py(m) - 5}" width="14" height="10" rx="2.5" class="${cur ? 'mm-cur' : 'mm-room'}"><title>${GAME.rooms[id].name && typeof GAME.rooms[id].name !== 'function' ? GAME.rooms[id].name : ''}</title></rect>`;
+      if (cur) {
+        // arrow pointing the way you're facing (the wall you're looking at)
+        const deg = FACE_DEG[GAME.rooms[id].facing || 'north'] ?? 0;
+        nodes += `<rect x="${px(m) - 7}" y="${py(m) - 5}" width="14" height="10" rx="2.5" class="mm-here"/>` +
+          `<path d="M 0,-6.5 L 5,4.5 L 0,1.8 L -5,4.5 Z" class="mm-cur" transform="translate(${px(m)},${py(m)}) rotate(${deg})"/>`;
+      } else {
+        nodes += `<rect x="${px(m) - 7}" y="${py(m) - 5}" width="14" height="10" rx="2.5" class="mm-room"/>`;
+      }
       // chevron on rooms with a way to another floor (stairs, trapdoor, pool…)
       const crossesUp = Object.values(GAME.rooms[id].exits || {}).some(ex => {
         const tm = GAME.map.rooms[ex.to];
