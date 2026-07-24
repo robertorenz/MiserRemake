@@ -42,15 +42,21 @@ const Scene = (() => {
 
   /* ---------- shells ---------- */
 
+  // Perspective lines extended past the 1200x675 viewBox so wide screens
+  // (preserveAspectRatio "meet" letterboxing) still show room, not void.
+  // Extension factor s=3.353 puts the near plane at x = -800 / 2000.
+  const EXT = { xL: -800, xR: VW + 800, yTop: -329, yBot: 1228, yTopHedge: -299 };
+
   function shellRoom(p) {
     const wall = p.wall || '#4a3b2a', back = p.back || '#544433';
     const floor = p.floor || '#33261a', ceil = p.ceil || '#241c13';
     const dark = shade(wall, -18), light = shade(back, 10);
+    const E = EXT;
     return `
-      <polygon points="0,0 ${VW},0 ${BW.x2},${BW.y1} ${BW.x1},${BW.y1}" fill="${ceil}"/>
-      <polygon points="0,${VH} ${VW},${VH} ${BW.x2},${BW.y2} ${BW.x1},${BW.y2}" fill="${floor}"/>
-      <polygon points="0,0 ${BW.x1},${BW.y1} ${BW.x1},${BW.y2} 0,${VH}" fill="${wall}"/>
-      <polygon points="${VW},0 ${BW.x2},${BW.y1} ${BW.x2},${BW.y2} ${VW},${VH}" fill="${dark}"/>
+      <polygon points="${E.xL},${E.yTop} ${E.xR},${E.yTop} ${BW.x2},${BW.y1} ${BW.x1},${BW.y1}" fill="${ceil}"/>
+      <polygon points="${E.xL},${E.yBot} ${E.xR},${E.yBot} ${BW.x2},${BW.y2} ${BW.x1},${BW.y2}" fill="${floor}"/>
+      <polygon points="${E.xL},${E.yTop} ${BW.x1},${BW.y1} ${BW.x1},${BW.y2} ${E.xL},${E.yBot}" fill="${wall}"/>
+      <polygon points="${E.xR},${E.yTop} ${BW.x2},${BW.y1} ${BW.x2},${BW.y2} ${E.xR},${E.yBot}" fill="${dark}"/>
       <rect x="${BW.x1}" y="${BW.y1}" width="${BW.x2 - BW.x1}" height="${BW.y2 - BW.y1}" fill="${back}"/>
       ${floorLines(floor)}
       <line x1="${BW.x1}" y1="${lerp(BW.y1, BW.y2, 0.68)}" x2="${BW.x2}" y2="${lerp(BW.y1, BW.y2, 0.68)}" stroke="${light}" stroke-opacity="0.5" stroke-width="3"/>
@@ -60,27 +66,29 @@ const Scene = (() => {
   function shellOutdoor(p) {
     const ground = p.floor || '#232a1c';
     const horizon = BW.y2;
+    const E = EXT;
     return `
-      <rect x="0" y="0" width="${VW}" height="${horizon}" fill="url(#sky-grad)"/>
+      <rect x="${E.xL}" y="-400" width="${E.xR - E.xL}" height="${horizon + 400}" fill="url(#sky-grad)"/>
       <circle cx="960" cy="110" r="42" fill="#e8ddc8" opacity="0.8"/>
       <circle cx="944" cy="100" r="40" fill="#0f1520" opacity="0.92"/>
       ${stars()}
       ${p.silhouette ? mansionSilhouette() : ''}
-      <rect x="0" y="${horizon}" width="${VW}" height="${VH - horizon}" fill="${ground}"/>
-      <polygon points="0,${VH} ${VW},${VH} ${BW.x2},${BW.y2} ${BW.x1},${BW.y2}" fill="${shade(ground, 8)}"/>
+      <rect x="${E.xL}" y="${horizon}" width="${E.xR - E.xL}" height="${E.yBot - horizon}" fill="${ground}"/>
+      <polygon points="${E.xL},${E.yBot} ${E.xR},${E.yBot} ${BW.x2},${BW.y2} ${BW.x1},${BW.y2}" fill="${shade(ground, 8)}"/>
     `;
   }
 
   function shellHedge(p) {
     const hedge = p.wall || '#26331f', hedgeD = shade(hedge, -12);
     const ground = p.floor || '#2a2e1d';
+    const E = EXT;
     return `
-      <rect x="0" y="0" width="${VW}" height="${BW.y2}" fill="url(#sky-grad)"/>
+      <rect x="${E.xL}" y="-400" width="${E.xR - E.xL}" height="${BW.y2 + 400}" fill="url(#sky-grad)"/>
       ${stars()}
-      <polygon points="0,${VH} ${VW},${VH} ${BW.x2},${BW.y2} ${BW.x1},${BW.y2}" fill="${ground}"/>
-      <rect x="0" y="${VH - 60}" width="${VW}" height="60" fill="${shade(ground, -8)}"/>
-      <polygon points="0,30 ${BW.x1},${BW.y1 + 30} ${BW.x1},${BW.y2} 0,${VH}" fill="${hedge}"/>
-      <polygon points="${VW},30 ${BW.x2},${BW.y1 + 30} ${BW.x2},${BW.y2} ${VW},${VH}" fill="${hedgeD}"/>
+      <polygon points="${E.xL},${E.yBot} ${E.xR},${E.yBot} ${BW.x2},${BW.y2} ${BW.x1},${BW.y2}" fill="${ground}"/>
+      <rect x="${E.xL}" y="${VH - 60}" width="${E.xR - E.xL}" height="${E.yBot - VH + 60}" fill="${shade(ground, -8)}"/>
+      <polygon points="${E.xL},${E.yTopHedge} ${BW.x1},${BW.y1 + 30} ${BW.x1},${BW.y2} ${E.xL},${E.yBot}" fill="${hedge}"/>
+      <polygon points="${E.xR},${E.yTopHedge} ${BW.x2},${BW.y1 + 30} ${BW.x2},${BW.y2} ${E.xR},${E.yBot}" fill="${hedgeD}"/>
       <rect x="${BW.x1}" y="${BW.y1 + 30}" width="${BW.x2 - BW.x1}" height="${BW.y2 - BW.y1 - 30}" fill="${shade(hedge, -5)}"/>
       ${leafTexture(hedge)}
     `;
@@ -518,10 +526,11 @@ const Scene = (() => {
 
     svgEl.innerHTML = `
       ${defs()}
+      <rect x="-800" y="-400" width="${VW + 1600}" height="${VH + 800}" fill="#0e0b09"/>
       ${shell}
       ${doors}
       ${props}
-      <rect x="0" y="0" width="${VW}" height="${VH}" fill="url(#candle-light)" pointer-events="none" class="light-veil"/>
+      <rect x="-800" y="-400" width="${VW + 1600}" height="${VH + 800}" fill="url(#candle-light)" pointer-events="none" class="light-veil"/>
     `;
   }
 

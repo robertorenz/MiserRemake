@@ -107,7 +107,7 @@ const GAME = {
         },
       },
       props: [
-        { type: 'mat', on: 'floor', u: 0, t: 0.85, id: 'mat', name: 'worn mat', words: ['mat', 'doormat'],
+        { type: 'mat', on: 'floor', u: 0, t: 0.8, scale: 1.7, id: 'mat', name: 'worn mat', words: ['mat', 'doormat'],
           desc: 'A worn welcome mat. Nobody has been welcome here for years.',
           onClick: a => { a.print('> move mat', 'echo'); GAME.rooms.front_porch.props[0].verbs.move(a); },
           verbs: {
