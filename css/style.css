@@ -170,6 +170,47 @@ body {
   z-index: 5;
 }
 
+/* ---------- minimap ---------- */
+
+#minimap[hidden] { display: none; }
+
+#minimap {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 218px;
+  background: rgba(19, 16, 16, 0.86);
+  border: 1px solid var(--seam);
+  border-radius: 4px;
+  padding: 8px 10px 10px;
+  pointer-events: none;
+}
+
+#minimap-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass-dim);
+  margin-bottom: 6px;
+}
+
+#minimap-svg { display: block; width: 100%; height: auto; }
+
+#minimap .mm-edges line { stroke: #5a4d3a; stroke-width: 2; }
+#minimap .mm-room { fill: var(--walnut-2); stroke: var(--brass-dim); stroke-width: 1.5; }
+#minimap .mm-cur { fill: var(--ember); animation: mm-pulse 1.6s ease-in-out infinite; }
+#minimap .mm-stairs { fill: var(--brass-dim); }
+
+@keyframes mm-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+@media (max-width: 860px) {
+  #minimap { display: none; }
+}
+
 .turn-btn {
   position: absolute;
   bottom: 12px;

@@ -18,6 +18,7 @@ const Engine = (() => {
       room: GAME.startRoom,
       itemLocs,               // itemId -> roomId | 'inv' | 'gone'
       flags: {},              // puzzle state
+      visited: {},            // roomId -> true (drives the minimap fog)
       dead: false,
       won: false,
     };
@@ -51,6 +52,7 @@ const Engine = (() => {
     const room = GAME.rooms[roomId];
     if (!room) return;
     state.room = roomId;
+    state.visited[roomId] = true;
     ui.showRoom();
     ui.print(roomName(room), 'room-title');
     ui.print(typeof room.desc === 'function' ? room.desc(api) : room.desc);

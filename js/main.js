@@ -63,6 +63,7 @@
     Scene.render(sceneEl, room, exits, visibleProps());
     $('#room-name').textContent = typeof room.name === 'function' ? room.name(Engine.api()) : room.name;
     turnBtn.hidden = !behindDir;
+    renderMinimap();
     sceneEl.classList.remove('fade-in');
     void sceneEl.getBoundingClientRect(); // restart animation
     sceneEl.classList.add('fade-in');
@@ -95,6 +96,54 @@
   sceneEl.addEventListener('mouseleave', () => { tipEl.hidden = true; });
 
   turnBtn.addEventListener('click', () => { if (behindDir) Engine.go(behindDir); });
+
+  /* ---------- minimap (fog of war: visited rooms only) ---------- */
+
+  function renderMinimap() {
+    const st = Engine.state();
+    const here = GAME.map && GAME.map.rooms[st.room];
+    const wrap = $('#minimap');
+    if (!here) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    $('#minimap-label').textContent = GAME.map.layers[here.layer] || '';
+
+    const layerRooms = Object.entries(GAME.map.rooms).filter(([, m]) => m.layer === here.layer);
+    const xs = layerRooms.map(([, m]) => m.x), ys = layerRooms.map(([, m]) => m.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const CX = 34, CY = 26, PAD = 16;
+    const W = (maxX - minX) * CX + PAD * 2, H = (maxY - minY) * CY + PAD * 2;
+    const px = m => PAD + (m.x - minX) * CX;
+    const py = m => PAD + (maxY - m.y) * CY; // north is up
+
+    let edges = '', nodes = '';
+    const seen = new Set();
+    for (const [id, m] of layerRooms) {
+      if (!st.visited[id]) continue;
+      for (const ex of Object.values(GAME.rooms[id].exits || {})) {
+        const tm = GAME.map.rooms[ex.to];
+        if (!tm || tm.layer !== m.layer || ex.to === id || !st.visited[ex.to]) continue;
+        const key = [id, ex.to].sort().join('|');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        edges += `<line x1="${px(m)}" y1="${py(m)}" x2="${px(tm)}" y2="${py(tm)}"/>`;
+      }
+    }
+    for (const [id, m] of layerRooms) {
+      if (!st.visited[id]) continue;
+      const cur = id === st.room;
+      nodes += `<rect x="${px(m) - 7}" y="${py(m) - 5}" width="14" height="10" rx="2.5" class="${cur ? 'mm-cur' : 'mm-room'}"><title>${GAME.rooms[id].name && typeof GAME.rooms[id].name !== 'function' ? GAME.rooms[id].name : ''}</title></rect>`;
+      // chevron on rooms with a way to another floor (stairs, trapdoor, pool…)
+      const crossesUp = Object.values(GAME.rooms[id].exits || {}).some(ex => {
+        const tm = GAME.map.rooms[ex.to];
+        return tm && tm.layer !== m.layer;
+      });
+      if (crossesUp) nodes += `<path d="M ${px(m) - 3.5} ${py(m) - 8} L ${px(m)} ${py(m) - 12} L ${px(m) + 3.5} ${py(m) - 8} Z" class="mm-stairs"/>`;
+    }
+    const svg = $('#minimap-svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = `<g class="mm-edges">${edges}</g>${nodes}`;
+  }
 
   /* ---------- inventory ---------- */
 
