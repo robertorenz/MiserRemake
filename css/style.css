@@ -149,6 +149,8 @@ body {
   pointer-events: none;
 }
 
+#room-plate { text-align: center; }
+
 #room-name {
   font-family: var(--disp);
   font-size: 17px;
@@ -156,6 +158,18 @@ body {
   color: var(--brass);
   white-space: nowrap;
 }
+
+#facing-chip {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass-dim);
+  margin-top: 1px;
+}
+
+.turn-hint { color: var(--ember); opacity: 0.85; }
 
 #hotspot-tip {
   position: absolute;

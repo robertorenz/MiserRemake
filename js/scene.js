@@ -215,10 +215,10 @@ const Scene = (() => {
 
   const PROPS = {
     painting: () => `
-      <rect x="-70" y="-190" width="140" height="110" fill="#2e2418" stroke="#d8b36a" stroke-width="5" class="hs-body"/>
-      <rect x="-58" y="-178" width="116" height="86" fill="#1d2a33"/>
-      <path d="M -50 -110 L -20 -150 L 5 -120 L 30 -158 L 50 -110 Z" fill="#3d4f42"/>
-      <circle cx="30" cy="-165" r="9" fill="#d8b36a" opacity="0.8"/>`,
+      <rect x="-70" y="-480" width="140" height="130" fill="#2e2418" stroke="#d8b36a" stroke-width="5" class="hs-body"/>
+      <rect x="-58" y="-468" width="116" height="106" fill="#1d2a33"/>
+      <path d="M -50 -380 L -20 -440 L 5 -400 L 30 -450 L 50 -380 Z" fill="#3d4f42"/>
+      <circle cx="30" cy="-448" r="9" fill="#d8b36a" opacity="0.8"/>`,
     paintingLeaning: () => `
       <g class="hs-body" transform="rotate(-4)">
       <rect x="-58" y="-150" width="116" height="92" fill="#2e2418" stroke="#d8b36a" stroke-width="5"/>
@@ -226,10 +226,10 @@ const Scene = (() => {
       <path d="M -40 -80 L -14 -116 L 4 -92 L 24 -122 L 40 -80 Z" fill="#44584a"/>
       </g>`,
     window: () => `
-      <rect x="-60" y="-230" width="120" height="170" fill="#101722" stroke="#2e2418" stroke-width="8" class="hs-body"/>
-      <line x1="0" y1="-230" x2="0" y2="-60" stroke="#2e2418" stroke-width="6"/>
-      <line x1="-60" y1="-145" x2="60" y2="-145" stroke="#2e2418" stroke-width="6"/>
-      <circle cx="28" cy="-196" r="12" fill="#e8ddc8" opacity="0.7"/>`,
+      <rect x="-72" y="-520" width="144" height="310" fill="#101722" stroke="#2e2418" stroke-width="10" class="hs-body"/>
+      <line x1="0" y1="-520" x2="0" y2="-210" stroke="#2e2418" stroke-width="7"/>
+      <line x1="-72" y1="-365" x2="72" y2="-365" stroke="#2e2418" stroke-width="7"/>
+      <circle cx="34" cy="-458" r="15" fill="#e8ddc8" opacity="0.7"/>`,
     table: () => `
       <g class="hs-body">
       <rect x="-95" y="-105" width="190" height="14" rx="3" fill="#5a4327"/>
@@ -353,11 +353,11 @@ const Scene = (() => {
       </g>`,
     valve: () => `
       <g class="hs-body">
-      <line x1="-140" y1="-90" x2="140" y2="-90" stroke="#5c6167" stroke-width="16"/>
-      <line x1="60" y1="-90" x2="60" y2="0" stroke="#5c6167" stroke-width="16"/>
-      <circle cx="0" cy="-90" r="26" fill="none" stroke="#b5533c" stroke-width="9"/>
-      <line x1="-18" y1="-90" x2="18" y2="-90" stroke="#b5533c" stroke-width="7"/>
-      <line x1="0" y1="-108" x2="0" y2="-72" stroke="#b5533c" stroke-width="7"/>
+      <line x1="-140" y1="-340" x2="140" y2="-340" stroke="#5c6167" stroke-width="16"/>
+      <line x1="60" y1="-340" x2="60" y2="0" stroke="#5c6167" stroke-width="16"/>
+      <circle cx="0" cy="-340" r="26" fill="none" stroke="#b5533c" stroke-width="9"/>
+      <line x1="-18" y1="-340" x2="18" y2="-340" stroke="#b5533c" stroke-width="7"/>
+      <line x1="0" y1="-358" x2="0" y2="-322" stroke="#b5533c" stroke-width="7"/>
       </g>`,
     faucet: () => `
       <g class="hs-body">

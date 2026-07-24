@@ -16,6 +16,7 @@ const Engine = (() => {
     for (const [id, item] of Object.entries(GAME.items)) itemLocs[id] = item.startsIn ?? null;
     return {
       room: GAME.startRoom,
+      facing: 'north',        // the way you are looking; set by movement
       itemLocs,               // itemId -> roomId | 'inv' | 'gone'
       flags: {},              // puzzle state
       visited: {},            // roomId -> true (drives the minimap fog)
@@ -78,13 +79,23 @@ const Engine = (() => {
     if (dirs.length) ui.print(`Obvious exits: ${dirs.join(', ')}.`, 'echo');
   }
 
+  const COMPASS = ['north', 'south', 'east', 'west'];
+  const OPP = { north: 'south', south: 'north', east: 'west', west: 'east' };
+
   function go(dir) {
     const room = GAME.rooms[state.room];
     const exit = openExits(room)[dir];
     if (!exit) { ui.print("It's impossible to go that way.", 'echo'); return; }
     if (exit.blocked && exit.blocked(api)) return; // blocked() prints (or kills) on its own
     if (exit.onUse) { exit.onUse(api); return; }
+    if (COMPASS.includes(dir)) state.facing = dir; // walk through a door → face that way
     enterRoom(exit.to);
+  }
+
+  function turnAround() {
+    state.facing = OPP[state.facing] || 'north';
+    ui.print(`You turn around. You are now facing ${state.facing}.`, 'echo');
+    ui.showRoom();
   }
 
   function goNamed(noun) {
@@ -233,6 +244,8 @@ const Engine = (() => {
     let noun = rest.join(' ');
     if (verb === 'take') noun = noun.replace(/^up /, '');
 
+    if (verb === 'turn' && (!noun || noun === 'around' || noun === 'back')) { turnAround(); return; }
+
     // game-level phrase / verb handlers first (jump, swim, magic phrases…)
     if (GAME.handlers) {
       const h = GAME.handlers[`${verb} ${noun}`.trim()] || GAME.handlers[verb];
@@ -325,5 +338,5 @@ const Engine = (() => {
     ui.modal(GAME.title, GAME.intro, [{ label: 'Step onto the porch', action: () => enterRoom(GAME.startRoom) }]);
   }
 
-  return { start, restart, handle, go, clickHotspot, state: () => state, api: () => api, openExits: () => openExits(GAME.rooms[state.room]) };
+  return { start, restart, handle, go, turnAround, clickHotspot, state: () => state, api: () => api, openExits: () => openExits(GAME.rooms[state.room]) };
 })();

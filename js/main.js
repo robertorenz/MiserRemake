@@ -23,51 +23,82 @@
 
   const resolve = v => (typeof v === 'function' ? v(Engine.api()) : v);
 
+  /* Re-orient a prop for the direction the player is looking.
+     Prop coordinates in data.js are authored for the room's designed
+     facing; this rotates them to the current heading. */
+  const VEC = { north: [0, 1], east: [1, 0], south: [0, -1], west: [-1, 0] };
+  const RIGHT = { north: 'east', east: 'south', south: 'west', west: 'north' };
+
+  function orientProp(p, designedFacing, facing) {
+    if (p.on === 'wall') {
+      const wallDir = p.wall || designedFacing; // which compass wall it hangs on
+      const rel = Scene.dirWall(wallDir, facing);
+      if (rel === 'back') return p;
+      if (rel === 'behind') return null;                     // it's behind you
+      return { ...p, on: 'floor', u: rel === 'left' ? -0.85 : 0.85, t: 0.5, scale: (p.scale ?? 1) * 0.75 };
+    }
+    if (designedFacing === facing) return p;
+    const [dx0, dy0] = VEC[designedFacing], [rx0, ry0] = VEC[RIGHT[designedFacing]];
+    const u0 = p.u ?? 0, t0 = p.t ?? 0.7;
+    const px = rx0 * u0 + dx0 * (2 * t0 - 1);
+    const py = ry0 * u0 + dy0 * (2 * t0 - 1);
+    const [dx, dy] = VEC[facing], [rx, ry] = VEC[RIGHT[facing]];
+    return {
+      ...p,
+      u: Math.max(-0.95, Math.min(0.95, px * rx + py * ry)),
+      t: Math.max(0.18, Math.min(0.92, (px * dx + py * dy + 1) / 2)),
+    };
+  }
+
   function visibleProps() {
     const state = Engine.state();
     const room = GAME.rooms[state.room];
+    const designed = room.facing || 'north';
     const props = [];
     for (const p of room.props || []) {
       if (p.hidden && p.hidden(Engine.api())) continue;
-      props.push({ ...p, hotspot: p.id ? { id: p.id, label: resolve(p.name) || p.id } : null });
+      const o = orientProp(p, designed, state.facing);
+      if (!o) continue;
+      props.push({ ...o, hotspot: p.id ? { id: p.id, label: resolve(p.name) || p.id } : null });
     }
     // items lying in this room render as glints (or their own prop type)
     for (const [id, loc] of Object.entries(state.itemLocs)) {
       if (loc !== state.room) continue;
       const item = GAME.items[id];
       const propDef = item.prop || { type: 'itemGlint', on: 'floor', u: 0.5, t: 0.8 };
-      props.push({ ...propDef, hotspot: { id, label: `Take the ${resolve(item.name)}` } });
+      const o = orientProp(propDef, designed, state.facing);
+      if (!o) continue;
+      props.push({ ...o, hotspot: { id, label: `Take the ${resolve(item.name)}` } });
     }
     return props;
   }
 
-  let behindDir = null;
-
   function showRoom() {
     const state = Engine.state();
     const room = GAME.rooms[state.room];
-    const facing = room.facing || 'north';
+    const facing = state.facing || 'north';
 
     const exits = [];
-    behindDir = null;
-    let behindLabel = '';
+    let behindCount = 0;
     for (const [dir, exit] of Object.entries(Engine.openExits())) {
       const wall = exit.wall || Scene.dirWall(dir, facing);
       const label = exit.label || `Go ${dir}`;
-      if (wall === 'behind') { behindDir = dir; behindLabel = label; continue; }
+      if (wall === 'behind') { behindCount++; continue; }
       let style = exit.style;
       if (!style && dir === 'up') style = 'stairs-up';
       if (!style && dir === 'down') style = 'stairs-down';
-      exits.push({ dir, label, wall, style, u: exit.u });
+      // authored u positions assume the designed facing; ignore them otherwise
+      const u = facing === (room.facing || 'north') ? exit.u : undefined;
+      exits.push({ dir, label, wall, style, u });
     }
-    if (behindDir) {
-      turnBtn.innerHTML = `&#8617; behind you &mdash; ${behindLabel} (${behindDir})`;
-      turnBtn.title = 'This door is behind you; clicking walks through it';
-    }
+    turnBtn.innerHTML = behindCount
+      ? `&#8635; turn around <span class="turn-hint">(door behind you)</span>`
+      : `&#8635; turn around`;
 
     Scene.render(sceneEl, room, exits, visibleProps());
     $('#room-name').textContent = typeof room.name === 'function' ? room.name(Engine.api()) : room.name;
-    turnBtn.hidden = !behindDir;
+    $('#facing-chip').textContent = `facing ${facing}`;
+    turnBtn.hidden = false;
     renderMinimap();
     sceneEl.classList.remove('fade-in');
     void sceneEl.getBoundingClientRect(); // restart animation
@@ -100,7 +131,7 @@
   });
   sceneEl.addEventListener('mouseleave', () => { tipEl.hidden = true; });
 
-  turnBtn.addEventListener('click', () => { if (behindDir) Engine.go(behindDir); });
+  turnBtn.addEventListener('click', () => Engine.turnAround());
 
   /* ---------- minimap (fog of war: visited rooms only) ---------- */
 
@@ -141,7 +172,7 @@
       const cur = id === st.room;
       if (cur) {
         // arrow pointing the way you're facing (the wall you're looking at)
-        const deg = FACE_DEG[GAME.rooms[id].facing || 'north'] ?? 0;
+        const deg = FACE_DEG[st.facing || 'north'] ?? 0;
         nodes += `<rect x="${px(m) - 7}" y="${py(m) - 5}" width="14" height="10" rx="2.5" class="mm-here"/>` +
           `<path d="M 0,-6.5 L 5,4.5 L 0,1.8 L -5,4.5 Z" class="mm-cur" transform="translate(${px(m)},${py(m)}) rotate(${deg})"/>`;
       } else {
@@ -213,8 +244,13 @@
 
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || !$('#modal-veil').hidden) return;
-    const dirs = { ArrowUp: 'north', ArrowDown: 'south', ArrowLeft: 'west', ArrowRight: 'east' };
-    if (dirs[e.key]) { e.preventDefault(); Engine.go(dirs[e.key]); }
+    // first-person arrows: ↑ forward, ←/→ sidestep, ↓ turn around
+    const f = Engine.state().facing || 'north';
+    const LEFT = { north: 'west', west: 'south', south: 'east', east: 'north' };
+    if (e.key === 'ArrowUp') { e.preventDefault(); Engine.go(f); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); Engine.go(LEFT[f]); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); Engine.go(RIGHT[f]); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); Engine.turnAround(); }
   });
 
   $('#btn-help').addEventListener('click', () =>
