@@ -453,6 +453,16 @@ const Scene = (() => {
       <ellipse cx="0" cy="-6" rx="26" ry="10" fill="#d8b36a" opacity="0.9"/>
       <path d="M 0 -34 L 4 -22 L 16 -18 L 4 -14 L 0 -2 L -4 -14 L -16 -18 L -4 -22 Z" fill="#ffb648"/>
       </g>`,
+    player: () => `
+      <g class="player-sprite">
+      <ellipse cx="0" cy="0" rx="26" ry="8" fill="#000" opacity="0.35"/>
+      <path d="M -20 -6 Q -24 -60 0 -66 Q 24 -60 20 -6 Z" fill="#3d3226"/>
+      <path d="M -14 -6 Q -16 -50 0 -56 Q 16 -50 14 -6 Z" fill="#54432e"/>
+      <circle cx="0" cy="-76" r="13" fill="#c9a97c"/>
+      <path d="M -14 -80 A 14 12 0 0 1 14 -80 L 12 -90 L -12 -90 Z" fill="#2e2418"/>
+      <rect x="18" y="-46" width="5" height="18" fill="#2e2418"/>
+      <ellipse cx="20.5" cy="-24" rx="7" ry="9" fill="#ffb648" opacity="0.9"/>
+      </g>`,
     leaf: () => `
       <g class="hs-body">
       <path d="M 0 0 C -34 -22 -30 -62 0 -78 C 30 -62 34 -22 0 0 Z" fill="#d8b36a"/>

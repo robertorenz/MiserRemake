@@ -68,6 +68,12 @@ const GAME = {
     <p>Click doors and objects in the room, or type commands like
     <kbd>get mat</kbd>, <kbd>unlock door</kbd>, <kbd>say ritnew</kbd>,
     <kbd>n</kbd>&hellip; just like 1981, only prettier.</p>
+    <p class="look-title">Choose your look <em>(switch anytime up top)</em>:</p>
+    <div class="look-picker" role="group" aria-label="Choose your look">
+      <button type="button" class="look-opt" data-look="firstperson"><b>First-Person</b><small>step inside each room</small></button>
+      <button type="button" class="look-opt" data-look="iso"><b>Isometric</b><small>angled bird&rsquo;s-eye view</small></button>
+      <button type="button" class="look-opt" data-look="side"><b>Side View</b><small>cutaway, dollhouse style</small></button>
+    </div>
     <p class="mast-sub"><em>Miser</em> by M.J. Lansing, CURSOR #27, &copy; 1981 The Code Works.</p>`,
   helpText: `
     <p><em>Click</em> doors to walk through them and objects to use them, or type

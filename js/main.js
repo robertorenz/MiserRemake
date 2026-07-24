@@ -73,32 +73,86 @@
     return props;
   }
 
+  /* ---------- look (renderer) selection ---------- */
+
+  const LOOKS = { firstperson: 'First-Person', iso: 'Isometric', side: 'Side View' };
+  let look = localStorage.getItem('miser-look');
+  if (!LOOKS[look]) look = 'firstperson';
+
+  function setLook(l) {
+    if (!LOOKS[l]) return;
+    look = l;
+    localStorage.setItem('miser-look', l);
+    $('#btn-look').textContent = `Look: ${LOOKS[l]}`;
+    document.querySelectorAll('[data-look]').forEach(b => b.classList.toggle('selected', b.dataset.look === l));
+    if (Engine.state()) showRoom();
+  }
+
+  /* Neutral room-space view for the iso/side renderers:
+     floor props at (x east, y north) in [-1,1]; wall props pinned
+     to a compass wall with a position along it. */
+  function neutralView(room, state) {
+    const designed = room.facing || 'north';
+    const floorProps = [], wallProps = [];
+    const add = (p, hotspot) => {
+      if (p.on === 'wall') {
+        wallProps.push({ type: p.type, wall: p.wall || designed, along: p.u ?? 0, scale: p.scale ?? 1, hotspot });
+        return;
+      }
+      const [dx, dy] = VEC[designed], [rx, ry] = VEC[RIGHT[designed]];
+      const u = p.u ?? 0, t = p.t ?? 0.7;
+      floorProps.push({ type: p.type, x: rx * u + dx * (2 * t - 1), y: ry * u + dy * (2 * t - 1), scale: p.scale ?? 1, hotspot });
+    };
+    for (const p of room.props || []) {
+      if (p.hidden && p.hidden(Engine.api())) continue;
+      add(p, p.id ? { id: p.id, label: resolve(p.name) || p.id } : null);
+    }
+    for (const [id, loc] of Object.entries(state.itemLocs)) {
+      if (loc !== state.room) continue;
+      const item = GAME.items[id];
+      add(item.prop || { type: 'itemGlint', on: 'floor', u: 0.5, t: 0.8 }, { id, label: `Take the ${resolve(item.name)}` });
+    }
+    const exits = [];
+    let spreadCount = 0;
+    for (const [dir, exit] of Object.entries(Engine.openExits())) {
+      const spread = dir === 'north' || dir === 'up' || dir === 'down' ? (spreadCount++) * 0.28 - 0.14 : 0;
+      exits.push({ dir, label: exit.label || `Go ${dir}`, style: exit.style, spread });
+    }
+    return { room, facing: state.facing || 'north', exits, floorProps, wallProps };
+  }
+
   function showRoom() {
     const state = Engine.state();
     const room = GAME.rooms[state.room];
     const facing = state.facing || 'north';
 
-    const exits = [];
-    let behindCount = 0;
-    for (const [dir, exit] of Object.entries(Engine.openExits())) {
-      const wall = exit.wall || Scene.dirWall(dir, facing);
-      const label = exit.label || `Go ${dir}`;
-      if (wall === 'behind') { behindCount++; continue; }
-      let style = exit.style;
-      if (!style && dir === 'up') style = 'stairs-up';
-      if (!style && dir === 'down') style = 'stairs-down';
-      // authored u positions assume the designed facing; ignore them otherwise
-      const u = facing === (room.facing || 'north') ? exit.u : undefined;
-      exits.push({ dir, label, wall, style, u });
+    if (look === 'iso') {
+      SceneIso.render(sceneEl, neutralView(room, state));
+    } else if (look === 'side') {
+      SceneSide.render(sceneEl, neutralView(room, state));
+    } else {
+      const exits = [];
+      let behindCount = 0;
+      for (const [dir, exit] of Object.entries(Engine.openExits())) {
+        const wall = exit.wall || Scene.dirWall(dir, facing);
+        const label = exit.label || `Go ${dir}`;
+        if (wall === 'behind') { behindCount++; continue; }
+        let style = exit.style;
+        if (!style && dir === 'up') style = 'stairs-up';
+        if (!style && dir === 'down') style = 'stairs-down';
+        // authored u positions assume the designed facing; ignore them otherwise
+        const u = facing === (room.facing || 'north') ? exit.u : undefined;
+        exits.push({ dir, label, wall, style, u });
+      }
+      turnBtn.innerHTML = behindCount
+        ? `&#8635; turn around <span class="turn-hint">(door behind you)</span>`
+        : `&#8635; turn around`;
+      Scene.render(sceneEl, room, exits, visibleProps());
     }
-    turnBtn.innerHTML = behindCount
-      ? `&#8635; turn around <span class="turn-hint">(door behind you)</span>`
-      : `&#8635; turn around`;
 
-    Scene.render(sceneEl, room, exits, visibleProps());
     $('#room-name').textContent = typeof room.name === 'function' ? room.name(Engine.api()) : room.name;
-    $('#facing-chip').textContent = `facing ${facing}`;
-    turnBtn.hidden = false;
+    $('#facing-chip').textContent = look === 'firstperson' ? `facing ${facing}` : '';
+    turnBtn.hidden = look !== 'firstperson';
     renderMinimap();
     sceneEl.classList.remove('fade-in');
     void sceneEl.getBoundingClientRect(); // restart animation
@@ -244,17 +298,32 @@
 
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || !$('#modal-veil').hidden) return;
-    // first-person arrows: ↑ forward, ←/→ sidestep, ↓ turn around
-    const f = Engine.state().facing || 'north';
-    const LEFT = { north: 'west', west: 'south', south: 'east', east: 'north' };
-    if (e.key === 'ArrowUp') { e.preventDefault(); Engine.go(f); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); Engine.go(LEFT[f]); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); Engine.go(RIGHT[f]); }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); Engine.turnAround(); }
+    if (look === 'firstperson') {
+      // first-person arrows: ↑ forward, ←/→ sidestep, ↓ turn around
+      const f = Engine.state().facing || 'north';
+      const LEFT = { north: 'west', west: 'south', south: 'east', east: 'north' };
+      if (e.key === 'ArrowUp') { e.preventDefault(); Engine.go(f); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); Engine.go(LEFT[f]); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); Engine.go(RIGHT[f]); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); Engine.turnAround(); }
+    } else {
+      // map views: arrows are compass-absolute
+      const dirs = { ArrowUp: 'north', ArrowDown: 'south', ArrowLeft: 'west', ArrowRight: 'east' };
+      if (dirs[e.key]) { e.preventDefault(); Engine.go(dirs[e.key]); }
+    }
   });
 
   $('#btn-help').addEventListener('click', () =>
     modal('How to Play', GAME.helpText, [{ label: 'Back to the mansion' }]));
+  $('#btn-look').addEventListener('click', () => {
+    const order = Object.keys(LOOKS);
+    setLook(order[(order.indexOf(look) + 1) % order.length]);
+  });
+  // look picker inside the intro modal (delegated: modal body is re-rendered)
+  $('#modal-body').addEventListener('click', e => {
+    const opt = e.target.closest('[data-look]');
+    if (opt) setLook(opt.dataset.look);
+  });
   $('#btn-restart').addEventListener('click', () =>
     modal('Start Over?', '<p>All progress will be lost to the dust.</p>',
       [{ label: 'Restart', action: () => Engine.restart() }, { label: 'Keep playing' }]));
@@ -262,5 +331,7 @@
   /* ---------- go ---------- */
 
   $('#score-max').textContent = GAME.treasureGoal || '?';
+  $('#btn-look').textContent = `Look: ${LOOKS[look]}`;
   Engine.start({ print, showRoom, refreshInventory, modal, setScore });
+  document.querySelectorAll('[data-look]').forEach(b => b.classList.toggle('selected', b.dataset.look === look));
 })();

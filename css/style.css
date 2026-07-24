@@ -397,6 +397,38 @@ body {
 
 #modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 
+/* ---------- look picker ---------- */
+
+.look-title { margin-top: 14px; }
+.look-title em { color: var(--brass-dim); font-size: 14px; }
+
+.look-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.look-opt {
+  font-family: var(--mono);
+  background: var(--walnut-2);
+  border: 1px solid var(--seam);
+  border-radius: 4px;
+  color: var(--parchment);
+  padding: 10px 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.look-opt b { display: block; font-size: 13px; letter-spacing: 0.04em; }
+.look-opt small { display: block; color: var(--brass-dim); font-size: 10.5px; margin-top: 3px; line-height: 1.35; }
+.look-opt:hover, .look-opt:focus-visible { border-color: var(--brass-dim); outline: none; }
+.look-opt.selected {
+  border-color: var(--brass);
+  background: rgba(216, 179, 106, 0.1);
+}
+.look-opt.selected b { color: var(--ember); }
+
 .modal-btn {
   font-family: var(--mono);
   font-size: 13.5px;

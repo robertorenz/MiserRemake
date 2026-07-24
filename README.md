@@ -12,6 +12,16 @@ one-point-perspective candlelit scene you can click your way through.
 Open `index.html` in any modern browser — no build step, no dependencies.
 Or play the hosted version via GitHub Pages.
 
+## Three looks, one game
+
+Pick your presentation on the title screen (or switch anytime with the **Look** button):
+
+- **First-Person** — step inside each room, one-point perspective, dynamic facing.
+- **Isometric** — angled bird's-eye view of every room, with your adventurer standing in it.
+- **Side View** — cutaway dollhouse-style stage with parallax depth.
+
+All three run on the same engine, data, and minimap — the style is purely how the mansion is drawn.
+
 ## How it plays
 
 - **Click** doors to walk through them and objects to use them — or **type** the original
